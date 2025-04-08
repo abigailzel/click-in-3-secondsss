@@ -1,1 +1,108 @@
+const TARGET_TIME = 3000; // 3 seconds in ms
+let startTime = null;
+let attempts = [];
 
+const btn = document.getElementById('startStopBtn');
+const resultDiv = document.getElementById('result');
+const attemptsDiv = document.getElementById('attemptsSummary');
+const statsDiv = document.getElementById('statsSummary');
+const chartCanvas = document.getElementById('attemptChart').getContext('2d');
+
+let chart = new Chart(chartCanvas, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Elapsed Time (ms)',
+      data: [],
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+btn.addEventListener('click', () => {
+  if (!startTime) {
+    startTime = new Date();
+    btn.textContent = 'Stop';
+    resultDiv.textContent = '';
+  } else {
+    const stopTime = new Date();
+    const elapsed = stopTime - startTime;
+    const diff = Math.abs(elapsed - TARGET_TIME);
+
+    let colorClass = '';
+    if (diff <= 10) {
+      colorClass = 'green';
+    } else if (diff <= 200) {
+      colorClass = 'blue';
+    } else if (diff <= 500) {
+      colorClass = 'yellow';
+    } else {
+      colorClass = 'red';
+    }
+
+    resultDiv.innerHTML = `<span class="${colorClass}">Elapsed Time: ${(elapsed / 1000).toFixed(3)}s</span>`;
+    
+    attempts.push({
+      number: attempts.length + 1,
+      start: startTime.toLocaleTimeString(),
+      stop: stopTime.toLocaleTimeString(),
+      elapsed: elapsed
+    });
+
+    updateAttempts();
+    updateStats();
+    updateChart();
+
+    startTime = null;
+    btn.textContent = 'Start';
+  }
+});
+
+document.getElementById('toggleAttempts').addEventListener('change', (e) => {
+  attemptsDiv.style.display = e.target.checked ? 'block' : 'none';
+});
+
+document.getElementById('toggleStats').addEventListener('change', (e) => {
+  statsDiv.style.display = e.target.checked ? 'block' : 'none';
+});
+
+function updateAttempts() {
+  let html = '<h4>Attempts</h4><ul class="list-group">';
+  attempts.forEach(a => {
+    html += `<li class="list-group-item">Attempt ${a.number}: ${a.start} → ${a.stop} — ${(a.elapsed / 1000).toFixed(3)}s</li>`;
+  });
+  html += '</ul>';
+  attemptsDiv.innerHTML = html;
+}
+
+function updateStats() {
+  if (attempts.length === 0) return;
+  const total = attempts.length;
+  const min = Math.min(...attempts.map(a => a.elapsed));
+  const max = Math.max(...attempts.map(a => a.elapsed));
+  const avg = attempts.reduce((sum, a) => sum + a.elapsed, 0) / total;
+
+  statsDiv.innerHTML = `
+    <h4>Statistics</h4>
+    <ul class="list-group">
+      <li class="list-group-item">Total Attempts: ${total}</li>
+      <li class="list-group-item">Min Time: ${(min / 1000).toFixed(3)}s</li>
+      <li class="list-group-item">Max Time: ${(max / 1000).toFixed(3)}s</li>
+      <li class="list-group-item">Avg Time: ${(avg / 1000).toFixed(3)}s</li>
+    </ul>
+  `;
+}
+
+function updateChart() {
+  chart.data.labels = attempts.map(a => `Attempt ${a.number}`);
+  chart.data.datasets[0].data = attempts.map(a => a.elapsed);
+  chart.update();
+}
