@@ -1,1 +1,4 @@
-
+.green { color: green; font-weight: bold; }
+.blue { color: blue; font-weight: bold; }
+.yellow { color: goldenrod; font-weight: bold; }
+.red { color: red; font-weight: bold; }
